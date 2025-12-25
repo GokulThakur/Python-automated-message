@@ -1,0 +1,15 @@
+/html/body/div[1]/div/div/div/div/div[3]/div/header
+
+
+/html/body/div[1]/div/div/div/div/div[3]/div/div[4]/header/header
+
+
+//*[@id="main"]/footer/div[1]/div/span/div/div/div/div[3]/div[2]/div
+
+/html/body/div[1]/div/div/div/div/div[3]/div/div[3]/div[2]/div/span/div/div/div/div[2]/div/div[1]/div[3]/div/div/div[1]/div[1]
+
+
+/html/body/div[1]/div/div/div/div/div[3]/div/div[5]/div/footer/input
+
+
+/html/body/div[1]/div/div/div/div/div[3]/div/div[3]/div[2]/div/span/div/div/div/div[2]/div/input
