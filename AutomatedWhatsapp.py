@@ -13,7 +13,7 @@ import platform
 from constants import *
 import functools
 import time
-
+from utils import copy_image_to_clipboard
 
 
 
@@ -97,7 +97,7 @@ class Whatsapp:
             driver.quit()
             raise Exception("--Whatsapp Login Failed")
 
-
+    @retry(max_attempts=3, delay=3)
     def send_message(self, phone_no, message):
         pyperclip.copy(message)
         try:
@@ -139,143 +139,71 @@ class Whatsapp:
         except Exception as e:
             logger.error(f"--Error occurred while sending the message: {e}")
 
+
+    @retry(max_attempts=3, delay=3)
     def send_photo_video_with_message(self, phone_no, path, message=""):
         logger.info(f"Sending photo/video to {phone_no}: {path}")
-        pyperclip.copy(message)
-        if os.path.isfile(path):
-            try:
-                print("file exists")
-                logger.debug("\tFile Exists.")
 
-                # open a chat
-                self.wait_10.until(
-                    EC.presence_of_element_located(
-                        (
-                            By.XPATH,
-                            SEARCHBAR,  # clicking the textbox input
-                        )
-                    )
-                )
-
-                inputbar = self.driver.find_element(
-                    By.XPATH, SEARCHBAR,  # name/phone text box input
-                )
-
-                logger.debug("\tInput bar input.")
-
-                ActionChains(self.driver).move_to_element(inputbar).click().key_down(
-                    self.CTRL_KEY
-                ).key_down(Keys.BACKSPACE).key_up(self.CTRL_KEY).key_up(
-                    Keys.BACKSPACE
-                ).send_keys(
-                    phone_no
-                ).key_down(
-                    Keys.ENTER
-                ).key_up(
-                    Keys.ENTER
-                ).perform()
-                time.sleep(1)
-
-                self.wait_10.until(
-                    EC.presence_of_element_located(
-                        (
-                            By.XPATH,PLUS_SIGN_BUTTON,
-                        )   # plus sign button
-                    )
-                )
-
-                plussignbutton = self.driver.find_element(
-                    By.XPATH,PLUS_SIGN_BUTTON, # plus sign button
-                )
-                logger.debug("\tAttaching the photo/video.")
-                ActionChains(self.driver).move_to_element(
-                    plussignbutton
-                ).click().perform()
-
-                time.sleep(3)
-                
-                #locating photos and videos
-                self.wait_10.until(
-                    EC.presence_of_element_located(
-                        (
-                            By.XPATH,PHOTOS_AND_VIDEOS,
-                        )
-                    )
-                )
-                print("photos_videos_button")
-
-                logger.debug("\tSelecting the photo/video.")
-                photos_videos_button = self.driver.find_element(
-                    By.XPATH,
-                    PHOTOS_AND_VIDEOS,
-                )
-                ActionChains(self.driver).move_to_element(photos_videos_button).click().perform()
-                time.sleep(4)
-
-                # self.wait_10.until(
-                #     EC.presence_of_element_located(
-                #         (
-                #             By.XPATH,  # clicking the textbox input
-                #             INPUT,
-                #         )
-                #     )
-                # )
-
-                # photoslistinputitem = self.driver.find_element(
-                #     By.XPATH,
-                #     INPUT,
-                # )
-                # photoslistinputitem.send_keys(path)
-                # time.sleep(1)
-
-                file_input = self.wait_10.until(
-                    EC.presence_of_element_located(
-                        (By.XPATH, INPUT)
-                    )
-                )
-
-                file_input.send_keys(path)
-                print("file_input ->  file found")
-
-                # time.sleep(5)
-                # ActionChains(self.driver)\
-                #     .key_down(self.CTRL_KEY)\
-                #     .send_keys("v")\
-                #     .key_up(self.CTRL_KEY)\
-                #     .perform()
-
-                time.sleep(10)
-                
-                caption_box = self.driver.find_element(By.XPATH, MESSAGE_BOX_AFTER_SELECTING_PHOTO)
-                ActionChains(self.driver).move_to_element(
-                    caption_box
-                ).click().key_down(self.CTRL_KEY).send_keys("v").key_up(self.CTRL_KEY).perform()
-                time.sleep(10)
-
-                logger.debug("\tSending the photo/video.")
-                # ActionChains(self.driver).send_keys(Keys.ENTER).perform()
-                # time.sleep(5)
-
-                sendbutton = self.driver.find_element(
-                    By.XPATH,SEND_BUTTON,
-                )
-                sendbutton.click()
-                print("sendbutton clicked")
-                time.sleep(10)
-
-                ActionChains(self.driver).move_to_element(inputbar).key_down(
-                    Keys.ESCAPE
-                ).key_up(Keys.ESCAPE).key_down(Keys.ESCAPE).key_up(
-                    Keys.ESCAPE
-                ).perform()
-                time.sleep(10)
-
-                logger.debug("\tPhoto/video sent.")
-                print("photo/video sent")
-            except Exception as e:
-                logger.error(f"--Error occurred while sending the photo/video: {e}")
-        else:
+        if not os.path.isfile(path):
             logger.error(f"--FileNotFoundException: Invalid File Path : {path}")
+            return
+
+        try:
+            self.wait_10.until(EC.presence_of_element_located((By.XPATH, SEARCHBAR)))
+            inputbar = self.driver.find_element(By.XPATH, SEARCHBAR)
+
+            ActionChains(self.driver)\
+                .move_to_element(inputbar)\
+                .click()\
+                .key_down(self.CTRL_KEY)\
+                .send_keys("a")\
+                .key_up(self.CTRL_KEY)\
+                .send_keys(phone_no)\
+                .send_keys(Keys.ENTER)\
+                .perform()
+
+            time.sleep(1)
+
+            copy_image_to_clipboard(path)
+
+            message_box = self.driver.find_element(By.XPATH, MESSAGE_INPUT_BAR)
+
+            ActionChains(self.driver)\
+                .move_to_element(message_box)\
+                .click()\
+                .key_down(self.CTRL_KEY)\
+                .send_keys("v")\
+                .key_up(self.CTRL_KEY)\
+                .perform()
+
+            time.sleep(4)
+
+            if message:
+                pyperclip.copy(message)
+                caption_box = self.wait_10.until(
+                    EC.presence_of_element_located((By.XPATH, MESSAGE_BOX_AFTER_SELECTING_PHOTO))
+                )
+
+                ActionChains(self.driver)\
+                    .move_to_element(caption_box)\
+                    .click()\
+                    .key_down(self.CTRL_KEY)\
+                    .send_keys("v")\
+                    .key_up(self.CTRL_KEY)\
+                    .perform()
+
+            time.sleep(1)
+
+            sendbutton = self.wait_10.until(
+                EC.element_to_be_clickable((By.XPATH, SEND_BUTTON))
+            )
+            sendbutton.click()
+
+            logger.info("Photo/video sent successfully.")
+            time.sleep(2)
+
+        except Exception as e:
+            logger.error(f"--Error occurred while sending the photo/video: {e}")
 
     def close(self):
         logger.info("Closing the session.")
